@@ -8,7 +8,6 @@ import org.example.services.HolidayService;
 
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.util.List;
 
@@ -35,10 +34,6 @@ public class JRBeanExample implements Reportable{
             JasperPrint print = JasperFillManager.fillReport(report,null,createDataSource());
             JasperExportManager.exportReportToPdfFile(print,file.getAbsolutePath());
 
-            //JasperExportManager
-/*
-            Reportable.showReportFromDataSource(dataSource);
-*/
         } catch (Exception e) {
             e.printStackTrace();
         }
