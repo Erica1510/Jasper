@@ -10,26 +10,46 @@ import java.util.HashMap;
 import static org.example.constants.JasperConsts.OUTPUT_FILE_PATH;
 import static org.example.constants.JasperConsts.REPORT_TEMPLATE_PATH;
 
-
 public interface Reportable {
     void start() throws FileNotFoundException, JRException;
+
     static void showReportFromDataSource(JRDataSource dataSource) {
         try {
-            FileInputStream fis = new FileInputStream(REPORT_TEMPLATE_PATH);
-            BufferedInputStream bufferedInputStream = new BufferedInputStream(fis);
+            // Load the report template
+            JasperReport jasperReport = loadReportTemplate(REPORT_TEMPLATE_PATH);
 
-       JasperReport jasperReport = (JasperReport) JRLoader.loadObject(bufferedInputStream);
-//            JasperReport jasperReport = JasperCompileManager.compileReport(REPORT_TEMPLATE_PATH);
-            JasperPrint jasperPrint = JasperFillManager.fillReport(jasperReport, new HashMap<>(), dataSource);
-            OutputStream outputStream = new FileOutputStream(OUTPUT_FILE_PATH + dataSource.getClass().getSimpleName()+ ".pdf");
+            // Fill the report with data
+            JasperPrint jasperPrint = fillReportWithData(jasperReport, dataSource);
 
-            // Write content to PDF file
-            JasperExportManager.exportReportToPdfStream(jasperPrint, outputStream);
+            // Export the report to PDF and save it to a file
+            exportReportToPDF(jasperPrint, OUTPUT_FILE_PATH + dataSource.getClass().getSimpleName() + ".pdf");
 
-            // view report to UI
+            // View the report in JasperViewer
             JasperViewer.viewReport(jasperPrint, false);
-        } catch (Exception e) {
+        } catch (IOException e) {
             e.printStackTrace();
+        } catch (JRException e) {
+            throw new RuntimeException(e);
         }
+    }
+
+    static JasperReport loadReportTemplate(String reportTemplatePath) throws JRException, FileNotFoundException {
+        FileInputStream fis = new FileInputStream(reportTemplatePath);
+        BufferedInputStream bufferedInputStream = new BufferedInputStream(fis);
+        return (JasperReport) JRLoader.loadObject(bufferedInputStream);
+    }
+
+    static JasperPrint fillReportWithData(JasperReport jasperReport, JRDataSource dataSource) throws JRException {
+        return JasperFillManager.fillReport(jasperReport, new HashMap<>(), dataSource);
+    }
+
+    static void exportReportToPDF(JasperPrint jasperPrint, String outputPath) throws JRException {
+        OutputStream outputStream = null;
+        try {
+            outputStream = new FileOutputStream(outputPath);
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+        JasperExportManager.exportReportToPdfStream(jasperPrint, outputStream);
     }
 }

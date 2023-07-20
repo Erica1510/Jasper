@@ -1,8 +1,6 @@
 package org.example.reports;
 
-import net.sf.dynamicreports.report.datasource.DRDataSource;
 import net.sf.jasperreports.engine.*;
-import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
 import net.sf.jasperreports.engine.data.JRMapCollectionDataSource;
 import org.example.model.Holiday;
 import org.example.services.HolidayService;
@@ -39,7 +37,6 @@ public class JRMapExample implements Reportable{
             JasperReport report = JasperCompileManager.compileReport("src/main/resources/reports/holydays.jrxml");
             JasperPrint print = JasperFillManager.fillReport(report,null,createDataSourceFromJRMap());
             JasperExportManager.exportReportToPdfFile(print,file.getAbsolutePath());
-//            Reportable.showReportFromDataSource(dataSource);
         } catch (Exception e) {
             e.printStackTrace();
         }

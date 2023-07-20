@@ -1,45 +1,80 @@
 package org.example.reports;
 
-
+import net.sf.dynamicreports.report.builder.column.TextColumnBuilder;
+import net.sf.dynamicreports.report.builder.component.ComponentBuilder;
+import net.sf.dynamicreports.report.datasource.DRDataSource;
 import net.sf.dynamicreports.report.exception.DRException;
-import net.sf.jasperreports.engine.JRResultSetDataSource;
+import net.sf.dynamicreports.report.builder.DynamicReports;
+import net.sf.dynamicreports.report.builder.column.Columns;
+import net.sf.dynamicreports.report.builder.style.StyleBuilder;
+import net.sf.dynamicreports.report.datasource.DRDataSource;
 import org.example.constants.JasperConsts;
 import org.example.services.HolidayService;
 
-import static net.sf.dynamicreports.report.builder.DynamicReports.*;
-import static org.example.constants.JasperConsts.*;
-import static org.example.constants.ReportStyleConsts.*;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.Date;
 
-public class DynamicReport implements Reportable{
+import static net.sf.dynamicreports.report.builder.DynamicReports.*;
+
+public class DynamicReport implements Reportable {
+    private static final String[] COLUMN_NAMES = {"Country", "Name", "Date"};
+    private static final String[] FIELD_NAMES = {"country", "name", "date"};
     private final HolidayService service = new HolidayService();
 
     @Override
     public void start() {
-        JRResultSetDataSource resultSetDataSource = new JRResultSetDataSource(service.findAll());
         try {
             report()
-                    .setDataSource(resultSetDataSource)
-                    .pageHeader(
-                            cmp.horizontalList(
-                                    cmp.text("Country").setStyle(BOLD_BORDERED),
-                                    cmp.text("Name").setStyle(BOLD_BORDERED),
-                                    cmp.text("Date").setStyle(BOLD_BORDERED)
-                                    ).setHeight(30).setStyle(HEADER_STYLE)
-                    )
-                    .fields(field(COUNTRY_FIELD, type.stringType()),field(DATE_FIELD, type.dateType()), field(NAME_FIELD, type.stringType()))
-                    .detail(
-                            cmp.horizontalList(
-                                    cmp.text(exp.jasperSyntax("$F{"+COUNTRY_FIELD+"}")).setStyle(DETAIL_BORDERED),
-                                    cmp.text(exp.jasperSyntax("$F{"+NAME_FIELD+"}")).setMinHeight(30).setStyle(DETAIL_BORDERED),
-                                    cmp.text(exp.jasperSyntax("$F{"+DATE_FIELD+"}")).setStyle(DETAIL_BORDERED)
-                                    )
-                    )
-                    .title(cmp.horizontalList(cmp.text("Holiday").setStyle(TITLE_STYLE), cmp.image(JasperConsts.IMAGE_PATH)))
+                    .columns(createColumns())
+                    .title(createTitle())
                     .pageFooter(cmp.pageXofY())
+                    .setDataSource(createDataSource())
                     .show();
         } catch (DRException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private DRDataSource createDataSource() {
+        DRDataSource dataSource = new DRDataSource(FIELD_NAMES);
+        ResultSet resultSet = service.findAll();
+
+        try {
+            while (resultSet.next()) {
+                String country = resultSet.getString("country");
+                String name = resultSet.getString("name");
+                Date date = resultSet.getDate("date");
+                dataSource.add(country, name, date);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
+        return dataSource;
+    }
+
+
+    private TextColumnBuilder<String>[] createColumns() {
+        StyleBuilder boldBorderedStyle = stl.style().bold().setBorder(stl.pen1Point()).setPadding(5);
+
+        TextColumnBuilder<String> column1 = Columns.column(COLUMN_NAMES[0], FIELD_NAMES[0], type.stringType());
+        column1.setStyle(boldBorderedStyle);
+
+        TextColumnBuilder<String> column2 = Columns.column(COLUMN_NAMES[1], FIELD_NAMES[1], type.stringType());
+        column2.setStyle(boldBorderedStyle);
+
+        TextColumnBuilder<Date> column3 = Columns.column(COLUMN_NAMES[2], FIELD_NAMES[2], type.dateType());
+        column3.setStyle(boldBorderedStyle);
+
+        return new TextColumnBuilder[]{column1, column2, column3};
+    }
+
+    private ComponentBuilder<?, ?> createTitle() {
+        return cmp.horizontalList(
+                cmp.text("Holiday").setStyle(stl.style().bold().setFontSize(18)),
+                cmp.image(JasperConsts.IMAGE_PATH).setFixedDimension(120, 60)
+        ).setStyle(stl.style().setPadding(10));
     }
 
     public static void main(String[] args) {
